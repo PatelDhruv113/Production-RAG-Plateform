@@ -7,7 +7,7 @@ class EmbeddingService:
             "all-MiniLM-L6-v2"
         )
 
-    def generate_embedding(self, texts):
+    def generate_embeddings(self, texts):
 
         return self.model.encode(
             texts,

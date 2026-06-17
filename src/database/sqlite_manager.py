@@ -104,4 +104,73 @@ class SQLiteManager:
         )
 
         conn.commit()
+
+        chunk_id = cursor.lastrowid
+
         conn.close()
+
+        return  chunk_id
+    
+    def get_all_chunks(self):
+
+        conn = self.connect()
+        cursor = conn.cursor()
+
+
+        cursor.execute(
+            """
+            SELECT 
+                id, 
+                chunk_text 
+            FROM chunks
+           """
+        )
+
+        rows = cursor.fetchall()
+        conn.close()
+
+        return rows
+    
+    def get_chunk_by_id(self, chunk_id):
+
+        conn = self.connect()
+
+        cursor = conn.connect()
+
+        cursor.execute(
+            """
+            SELECT chunk_text
+            FROM chunks 
+            WHERE id=?
+            """,
+            (chunk_id)
+        )
+
+        row = cursor.fetchone()
+
+        conn.close()
+
+        return row
+    
+    def get_chunk_text(self, chunk_id):
+
+        conn = self.connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT chunk_text
+            FROM chunks
+            WHERE id=?
+            """,
+            (chunk_id)
+        )
+
+        row = cursor.fetchone()
+
+        conn.close()
+
+        if row:
+            return row[0]
+        
+        return None
