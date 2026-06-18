@@ -29,8 +29,21 @@ class SQLiteManager:
            chunk_text TEXT,
            page_number INTEGER,
            category TEXT,
+           source_file TEXT,
            FOREIGN KEY(document_id)
            REFERENCES documents(id)
+        )
+        """)
+
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS evaluations(
+           id INTEGER PRIMARY KEY AUTOINCREMENT,
+           query TEXT,
+           faithfulness REAL,
+           answer_relevancy REAL,
+           judge_score REAL,
+           hallucinated INTEGER,
+           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
 
@@ -78,7 +91,7 @@ class SQLiteManager:
     
         return rows
     
-    def save_chunk(self, document_id, chunk_text, page_number, category):
+    def save_chunk(self, document_id, chunk_text, page_number, category, source_file):
 
         conn = self.connect()
 
@@ -99,7 +112,8 @@ class SQLiteManager:
                 document_id,
                 chunk_text,
                 page_number,
-                category
+                category,
+                source_file
             )
         )
 
@@ -174,3 +188,54 @@ class SQLiteManager:
             return row[0]
         
         return None
+    
+    def get_chunk_with_source(self, chunk_id):
+
+        conn = self.connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT 
+                chunk_text,
+                source_file
+            FROM chunks
+            WHERE id=?
+            """,
+            (chunk_id)
+        )
+
+        row = cursor.fetchone()
+
+        conn.close()
+
+        return row
+    
+    def save_evaluation(self, query, faithfulness,  answer_relevancy, judge_score, hallucinated):
+
+        conn = self.connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+        """
+        INSERT INTO evaluations(
+            query,
+            faithfulness,
+            answer_relevancy,
+            judge_score,
+            hallucinated
+        )
+        VALUES (?, ?, ?, ?, ?)
+        """,
+          (
+              query,
+              faithfulness,
+              answer_relevancy,
+              judge_score,
+              hallucinated
+          )
+        )
+     
+        conn.commit()
+        conn.close()
+        
