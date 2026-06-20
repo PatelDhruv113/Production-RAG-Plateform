@@ -66,3 +66,22 @@ retriever.create_index(embeddings)
 retriever.save_index("data/faiss_index/rag.index")
 
 print("Done", flush=True)
+
+
+
+
+
+
+# import sqlite3
+
+# conn = sqlite3.connect("rag.db")
+
+# cursor = conn.cursor()
+
+# cursor.execute("""
+# SELECT name
+# FROM sqlite_master
+# WHERE type='table'
+# """)
+
+# print(cursor.fetchall())

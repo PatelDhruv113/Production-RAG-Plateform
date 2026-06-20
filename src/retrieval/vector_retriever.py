@@ -19,6 +19,25 @@ class VectorRetriever:
             embeddings
         )
 
+    def add_embeddings(self, embeddings):
+
+        embeddings = np.array(
+            embeddings,
+            dtype=np.float32
+        )
+
+        if self.index is None:
+
+            self.create_index(
+                embeddings
+            )
+
+        else:
+
+            self.index.add(
+                embeddings
+            )
+            
     def save_index(self, path):
 
         faiss.write_index(self.index, path)

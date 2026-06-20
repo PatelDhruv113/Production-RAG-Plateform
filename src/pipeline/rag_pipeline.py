@@ -37,10 +37,8 @@ class RAGPipeline:
             self.confidence = ConfidenceScorer()
 
             self.evaluator = RagasEvaluator()
-        def run(
-            self,
-            query: str
-        ):
+        
+        def run( self, query: str,     category=None):
 
             # Step 1
             rewritten_query = self.rewriter.rewrite(
@@ -58,7 +56,8 @@ class RAGPipeline:
             for q in queries:
 
                 chunks = self.retriever.retrieve(
-                    q
+                    q,
+                    category=category
                 )
 
                 all_chunks.extend(

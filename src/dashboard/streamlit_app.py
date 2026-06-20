@@ -11,12 +11,28 @@ PROJECT_ROOT = os.path.abspath(
 sys.path.append(PROJECT_ROOT)
 
 import streamlit as st
-import pandas as pd
 
 from src.database.sqlite_manager import SQLiteManager
 from src.pipeline.rag_pipeline import RAGPipeline
 from src.evaluation.ragas_evaluator import RagasEvaluator
+from src.ingestion.document_ingestion_pipeline import (
+    DocumentIngestionPipeline
+)
 
+# ----------------------------
+# Streamlit Config
+# ----------------------------
+
+st.set_page_config(
+    page_title="Production RAG Platform",
+    layout="wide"
+)
+
+st.title("Production Grade RAG Platform")
+
+# ----------------------------
+# Services
+# ----------------------------
 
 @st.cache_resource
 def load_pipeline():
@@ -30,123 +46,302 @@ def load_evaluator():
 
 pipeline = load_pipeline()
 evaluator = load_evaluator()
+
 db = SQLiteManager()
 
-st.set_page_config(
-    page_title="Production RAG Platform",
-    layout="wide"
-)
+ingestion = DocumentIngestionPipeline()
 
-st.title("Production Grade RAG Platform")
+# ----------------------------
+# Session State
+# ----------------------------
 
 if "history" not in st.session_state:
     st.session_state.history = []
+
+# ----------------------------
+# Sidebar
+# ----------------------------
+
 with st.sidebar:
 
-    st.header(
-        "Query History"
+    st.header("Query History")
+
+    if not st.session_state.history:
+        st.info("No queries yet")
+    else:
+        for q in st.session_state.history:
+            st.write(f"• {q}")
+
+# ----------------------------
+# Tabs
+# ----------------------------
+
+tab1, tab2 = st.tabs(
+    [
+        "Ask Question",
+        "Category Management"
+    ]
+)
+
+# ==================================================
+# TAB 2 - CATEGORY MANAGEMENT
+# ==================================================
+
+with tab2:
+
+    st.subheader("Create Category")
+
+    new_category = st.text_input(
+        "Category Name"
     )
 
-    if len(
-        st.session_state.history
-    ) == 0:
+    if st.button("Create Category"):
 
-        st.info(
-            "No queries yet"
-        )
+        if new_category.strip():
+
+            db.create_category(
+                new_category.strip()
+            )
+
+            st.success(
+                "Category Created Successfully"
+            )
+
+        else:
+
+            st.warning(
+                "Enter Category Name"
+            )
+
+    st.subheader(
+        "Existing Categories"
+    )
+
+    categories = db.get_categories()
+
+    if categories:
+
+        for category in categories:
+
+            st.write(
+                f"• {category}"
+            )
 
     else:
 
-        for q in st.session_state.history:
+        st.info(
+            "No Categories Found"
+        )
 
-            st.write(
-                f"• {q}"
-            )
+# ==================================================
+# TAB 1 - ASK QUESTION
+# ==================================================
 
-query = st.text_input(
-    "Ask Question"
-)
+with tab1:
 
-if st.button("Generate Answer"):
+    categories = db.get_categories()
 
-    if not query.strip():
-        st.warning("Enter a question")
+    if not categories:
+
+        st.warning(
+            "No categories found. Create one first."
+        )
+
         st.stop()
 
-    with st.spinner("Generating..."):
+    selected_category = st.selectbox(
+        "Select Category",
+        categories
+    )
 
-        result = pipeline.run(query)
-        
-        st.session_state.history.insert(
-            0,
-            query
+    uploaded_file = st.file_uploader(
+        "Upload PDF",
+        type=["pdf"]
+    )
+
+    # ------------------------------------------
+    # PDF Upload & Ingestion
+    # ------------------------------------------
+
+    if uploaded_file:
+
+        upload_dir = "data/uploads"
+
+        os.makedirs(
+            upload_dir,
+            exist_ok=True
         )
-        
-        st.session_state.history = (
-            st.session_state.history[:10]
+
+        file_path = os.path.join(
+            upload_dir,
+            uploaded_file.name
         )
+
+        with open(
+            file_path,
+            "wb"
+        ) as f:
+
+            f.write(
+                uploaded_file.getbuffer()
+            )
+
+        with st.spinner(
+            "Processing document..."
+        ):
+
+            ingestion.ingest(
+                pdf_path=file_path,
+                category=selected_category
+            )
+
+        st.success(
+            f"""
+Uploaded '{uploaded_file.name}'
+
+✓ PDF Loaded
+
+✓ Chunks Generated
+
+✓ Embeddings Created
+
+✓ Saved To Database
+
+✓ FAISS Index Updated
+
+Document is now ready for querying.
+"""
+        )
+
+    # ------------------------------------------
+    # Query Section
+    # ------------------------------------------
+
+    query = st.text_input(
+        "Ask Question"
+    )
+
+    if st.button(
+        "Generate Answer"
+    ):
+
+        if not query.strip():
+
+            st.warning(
+                "Enter a question"
+            )
+
+            st.stop()
+
+        with st.spinner(
+            "Generating..."
+        ):
+
+            result = pipeline.run(
+                query=query,
+                category=selected_category
+            )
+
+            st.session_state.history.insert(
+                0,
+                query
+            )
+
+            st.session_state.history = (
+                st.session_state.history[:10]
+            )
+
         answer = result["answer"]
         sources = result["sources"]
         chunks = result["chunks"]
         confidence = result["confidence"]
         evaluation = result["evaluation"]
 
-    st.subheader("Answer")
-    st.write(answer)
+        # --------------------
+        # Answer
+        # --------------------
 
-    st.subheader("Sources")
+        st.subheader("Answer")
 
-    for i, source in enumerate(sources):
+        st.write(answer)
 
-        st.write(f"• {source}")
+        # --------------------
+        # Sources + Chunks
+        # --------------------
 
-        if i < len(chunks):
+        st.subheader("Sources")
 
-            with st.expander(
-                f"View Chunk {i + 1}"
-            ):
+        for i, source in enumerate(
+            sources
+        ):
 
-                chunk = chunks[i]
+            st.write(
+                f"• {source}"
+            )
 
-                if isinstance(chunk, dict):
+            if i < len(chunks):
 
-                    st.write(
-                        chunk.get(
-                            "text",
-                            "No content found"
+                with st.expander(
+                    f"View Chunk {i + 1}"
+                ):
+
+                    chunk = chunks[i]
+
+                    if isinstance(
+                        chunk,
+                        dict
+                    ):
+
+                        st.write(
+                            chunk.get(
+                                "text",
+                                "No content found"
+                            )
                         )
-                    )
 
-                else:
+                    else:
 
-                    st.write(chunk)
+                        st.write(chunk)
 
-    st.subheader("Evaluation")
+        # --------------------
+        # Evaluation
+        # --------------------
 
-    if evaluation["faithfulness"] < 50:
-
-        st.error(
-            "⚠ Potential Hallucination Detected"
+        st.subheader(
+            "Evaluation"
         )
 
-    elif evaluation["faithfulness"] < 75:
+        if evaluation[
+            "faithfulness"
+        ] < 50:
 
-        st.warning(
-            "⚠ Answer Partially Supported By Retrieved Context"
-        )
+            st.error(
+                "Potential Hallucination Detected"
+            )
 
-    else:
+        elif evaluation[
+            "faithfulness"
+        ] < 75:
 
-        st.success(
-            "✓ Answer Well Grounded In Retrieved Context"
-        )
+            st.warning(
+                "Answer Partially Supported By Context"
+            )
 
-    try:
+        else:
+
+            st.success(
+                "Answer Well Grounded In Context"
+            )
+
+        # --------------------
+        # Metrics
+        # --------------------
 
         judge_score = round(
             (
                 evaluation["faithfulness"]
-                + evaluation["answer_relevancy"]
+                +
+                evaluation["answer_relevancy"]
             ) / 2,
             2
         )
@@ -171,10 +366,4 @@ if st.button("Generate Answer"):
         c4.metric(
             "Judge",
             f"{judge_score:.2f}%"
-        )
-
-    except Exception as e:
-
-        st.error(
-            f"Evaluation Error: {e}"
         )

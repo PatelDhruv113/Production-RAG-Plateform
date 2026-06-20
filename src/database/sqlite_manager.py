@@ -47,6 +47,14 @@ class SQLiteManager:
         )
         """)
 
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS categories(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
         conn.commit()
         conn.close()
 
@@ -279,3 +287,79 @@ class SQLiteManager:
           conn.close()
       
           return rows
+
+    def create_category(self, name):
+
+      conn = self.connect()
+      cursor = conn.cursor()
+  
+      cursor.execute(
+          """
+          INSERT INTO categories(name)
+          VALUES(?)
+          """,
+          (name,)
+      )
+  
+      conn.commit()
+      conn.close()
+
+    def get_categories(self):
+
+       conn = self.connect()
+       cursor = conn.cursor()
+   
+       cursor.execute(
+           """
+           SELECT name
+           FROM categories
+           ORDER BY name
+           """
+       )
+   
+       rows = cursor.fetchall()
+   
+       conn.close()
+   
+       return [row[0] for row in rows]
+    
+    
+    def delete_category(self, name):
+
+       conn = self.connect()
+       cursor = conn.cursor()
+   
+       cursor.execute(
+           """
+           DELETE FROM categories
+           WHERE name=?
+           """,
+           (name,)
+       )
+   
+       conn.commit()
+       conn.close()
+
+    def get_chunks_by_category(self,category):
+
+      conn = self.connect()
+      cursor = conn.cursor()
+ 
+      cursor.execute(
+          """
+          SELECT
+              id,
+              chunk_text,
+              source_file,
+              page_number
+          FROM chunks
+          WHERE category=?
+          """,
+          (category,)
+      )
+ 
+      rows = cursor.fetchall()
+ 
+      conn.close()
+ 
+      return rows
