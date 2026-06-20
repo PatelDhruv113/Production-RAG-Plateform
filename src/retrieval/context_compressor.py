@@ -30,7 +30,9 @@ class ContextCompressor:
 
         for chunk in chunks:
 
-            sentences = chunk.split(".")
+            text = chunk["text"] if isinstance(chunk, dict) else chunk
+
+            sentences = text.split(".")
 
             relevant = []
 

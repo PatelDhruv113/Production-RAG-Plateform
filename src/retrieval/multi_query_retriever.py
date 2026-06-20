@@ -10,9 +10,11 @@ class MultiQueryRetriever:
 
             for chunk in result:
 
-                if chunk not in seen:
+                chunk_id = chunk["id"] if isinstance(chunk, dict) else chunk
 
-                    seen.add(chunk)
+                if chunk_id not in seen:
+
+                    seen.add(chunk_id)
 
                     merged.append(chunk)
 

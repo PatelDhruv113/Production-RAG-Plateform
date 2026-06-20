@@ -1,17 +1,23 @@
 class CitationService:
 
-    def generate(self, sources):
+    def generate(self, chunks):
 
-        unique_sources = list(
-            set(sources)
-        )
+        citations=[]
 
-        citation_text = "\n".join(
-            [
-                f"{i+1}. {source}"
-                for i,source
-                in enumerate(unique_sources)
-            ]
+        for chunk in chunks:
+
+            if not isinstance(chunk, dict):
+
+                continue
+                
+            source = chunk["source"]
+
+            page = chunk["page"]
+
+            citations.append(
+                f"{source} (page {page})"
+            )
+
+        return list(
+            dict.fromkeys(citations)
         )
-    
-        return citation_text

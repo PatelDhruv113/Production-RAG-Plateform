@@ -30,9 +30,19 @@ class Retriever:
 
        rows = self.db.get_all_chunks()
 
-       chunks = [
-           row[1]
+       chunk_records = [
+           {
+               "id": row[0],
+               "text": row[1],
+               "source": row[2],
+               "page": row[3]
+           }
            for row in rows
+       ]
+
+       chunks = [
+           chunk["text"]
+           for chunk in chunk_records
        ]
 
        #Bm25 
@@ -47,7 +57,7 @@ class Retriever:
 
        #vector search
        distances, vector_indices = (
-           self.vector_search(
+           self.vector.search(
                query_embedding,
                top_k
            )
@@ -59,7 +69,7 @@ class Retriever:
        
        #Bm25 Search
        bm25_indices = (
-           self.bm25_search(
+           self.bm25.search(
               query,
               top_k
            ).tolist()
@@ -79,6 +89,6 @@ class Retriever:
            
            if idx < len(chunks):
                
-               retrieved_chunks.append(chunks[idx])
+               retrieved_chunks.append(chunk_records[idx])
 
        return retrieved_chunks

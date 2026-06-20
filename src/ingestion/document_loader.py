@@ -5,17 +5,31 @@ class DocumentLoader:
 
     def load_pdf(self, file_path: str) -> str:
 
+        pages = self.load_pdf_pages(file_path)
+
+        return "\n".join(
+            page["text"]
+            for page in pages
+        )
+
+    def load_pdf_pages(self, file_path: str):
+
         reader = PdfReader(file_path)
 
-        text = ""
+        pages = []
 
-        for page in reader.pages:
+        for page_number, page in enumerate(reader.pages, start=1):
             page_text = page.extract_text()
 
             if page_text:
-                text += page_text + "\n"
+                pages.append(
+                    {
+                        "page_number": page_number,
+                        "text": page_text
+                    }
+                )
 
-        return text
+        return pages
     
     def load_folder(self, folder_path: str):
 
@@ -23,7 +37,7 @@ class DocumentLoader:
 
         for pdf_file in Path(folder_path).rglob("*.pdf"):
 
-            text = self.load_pdf(
+            pages = self.load_pdf_pages(
                 str(pdf_file)
             )
 
@@ -31,7 +45,11 @@ class DocumentLoader:
                 {
                     "filename": pdf_file.name,
                     "filepath": str(pdf_file),
-                    "text": text
+                    "text": "\n".join(
+                        page["text"]
+                        for page in pages
+                    ),
+                    "pages": pages
                 }
             )
         return documents

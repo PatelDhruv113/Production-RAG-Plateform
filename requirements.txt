@@ -6,7 +6,7 @@ sentence-transformers
 transformers
 torch
 
-faiss-cpum
+faiss-cpu
 
 rank-bm25
 

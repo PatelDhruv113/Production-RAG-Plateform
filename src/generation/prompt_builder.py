@@ -2,6 +2,7 @@ class PromptBuilder:
 
     def build(self,query,context):
 
+        # print("context:", context)
         prompt = f"""
 You are a helpful assistant.
 

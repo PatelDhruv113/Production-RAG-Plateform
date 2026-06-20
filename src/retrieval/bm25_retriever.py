@@ -9,6 +9,11 @@ class BM25Retriever:
 
     def build_index(self, chunks):
 
+        if not chunks:
+            raise ValueError(
+                "No chunks found in database"
+            )
+        
         self.chunks = chunks
 
         tokenized_chunks = [

@@ -90,6 +90,22 @@ class SQLiteManager:
         conn.close()
     
         return rows
+
+    def reset_document_store(self):
+
+        conn = self.connect()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "DELETE FROM chunks"
+        )
+
+        cursor.execute(
+            "DELETE FROM documents"
+        )
+
+        conn.commit()
+        conn.close()
     
     def save_chunk(self, document_id, chunk_text, page_number, category, source_file):
 
@@ -104,9 +120,10 @@ class SQLiteManager:
                 document_id,
                 chunk_text,
                 page_number,
-                category
+                category,
+                source_file
             )
-            VALUES(?, ?, ? ,?)
+            VALUES(?, ?, ?, ?, ?)
             """,
             (
                 document_id,
@@ -123,7 +140,7 @@ class SQLiteManager:
 
         conn.close()
 
-        return  chunk_id
+        return chunk_id
     
     def get_all_chunks(self):
 
@@ -131,14 +148,15 @@ class SQLiteManager:
         cursor = conn.cursor()
 
 
-        cursor.execute(
-            """
-            SELECT 
-                id, 
-                chunk_text 
-            FROM chunks
-           """
-        )
+        cursor.execute("""
+          SELECT
+              id,
+              chunk_text,
+              source_file,
+              page_number
+          FROM chunks
+          ORDER BY id
+        """)
 
         rows = cursor.fetchall()
         conn.close()
@@ -149,7 +167,7 @@ class SQLiteManager:
 
         conn = self.connect()
 
-        cursor = conn.connect()
+        cursor = conn.cursor()
 
         cursor.execute(
             """
@@ -239,3 +257,25 @@ class SQLiteManager:
         conn.commit()
         conn.close()
         
+    def get_evaluations(self):
+
+          conn = self.connect()
+          cursor = conn.cursor()
+      
+          cursor.execute("""
+              SELECT
+                  query,
+                  faithfulness,
+                  answer_relevancy,
+                  judge_score,
+                  hallucinated,
+                  created_at
+              FROM evaluations
+              ORDER BY created_at DESC
+          """)
+      
+          rows = cursor.fetchall()
+      
+          conn.close()
+      
+          return rows

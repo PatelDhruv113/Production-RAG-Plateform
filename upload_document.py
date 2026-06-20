@@ -3,88 +3,66 @@ from src.ingestion.document_loader import DocumentLoader
 from src.ingestion.chunking_service import ChunkingService
 from src.ingestion.embedding_service import EmbeddingService
 from src.retrieval.vector_retriever import VectorRetriever
-from src.retrieval.chunk_mapper import ChunkMapper
-from src.retrieval.bm25_retriever import BM25Retriever
-
-# db = SQLiteManager()
-
-# loader = DocumentLoader()
-
-# chunker = ChunkingService()
-
-# embedder = EmbeddingService()
-
-# retriever = VectorRetriever()
-
-# mapper = ChunkMapper()
-
-# documents = loader.load_folder(
-#     "data/documents"
-# )
-
-# all_chunks = []
-# chunk_mapping = {}
-
-# for doc in documents:
-
-#     document_id = db.save_document(
-#         filename=doc["filename"],
-#         category="Unknown"
-#     )
-
-#     chunks = chunker.chunk_documents(
-#         doc["text"]
-#     )
-
-#     for chunk in chunks:
-
-#         db.save_chunk(
-#             document_id=document_id,
-#             chunk_text=chunk,
-#             page_number=0,
-#             category="Unknown"
-#         )
-
-#         all_chunks.append(chunk)
-        
-#         chunk_mapping[len(all_chunks) - 1] = chunk_id
-# embeddings = embedder.generate_embeddings(
-#     all_chunks
-# )
-
-# retriever.create_index(
-#     embeddings
-# )
-
-
-# retriever.save_index(
-#     "data/faiss_index/rag.index"
-# )
-
-# print("Done")
-
-
-
-
-
 
 db = SQLiteManager()
+db.create_tables()
+db.reset_document_store()
 
-rows = db.get_all_chunks()
+loader = DocumentLoader()
+chunker = ChunkingService()
+embedder = EmbeddingService()
+retriever = VectorRetriever()
 
-chunks = [
-    row[1]
-    for row in rows
-]
+documents = loader.load_folder("data/documents")
+print("Documents Found:", len(documents), flush=True)
 
-bm25 = BM25Retriever()
+all_chunks = []
+chunk_mapping = {}
 
-bm25.build_index(
-    chunks
-)
+for doc in documents:
+    print(f"Indexing {doc['filename']}...", flush=True)
 
-results = bm25.search(
-    "derivative rules"
-)
+    document_id = db.save_document(
+        filename=doc["filename"],
+        category="Unknown"
+    )
 
-print(results)
+    pages = doc.get(
+        "pages",
+        [
+            {
+                "page_number": 1,
+                "text": doc["text"]
+            }
+        ]
+    )
+
+    for page in pages:
+        chunks = chunker.chunk_documents(page["text"])
+
+        for chunk in chunks:
+            chunk_id = db.save_chunk(
+                document_id=document_id,
+                chunk_text=chunk,
+                page_number=page["page_number"],
+                category="Unknown",
+                source_file=doc["filename"]
+            )
+
+            all_chunks.append(chunk)
+
+            chunk_mapping[len(all_chunks) - 1] = chunk_id
+
+if not all_chunks:
+    raise RuntimeError("No chunks were created. Check data/documents for readable PDFs.")
+
+print("Chunks Created:", len(all_chunks), flush=True)
+
+# Generate embeddings after all chunks are collected
+embeddings = embedder.generate_embeddings(all_chunks)
+
+retriever.create_index(embeddings)
+
+retriever.save_index("data/faiss_index/rag.index")
+
+print("Done", flush=True)
