@@ -14,3 +14,10 @@ logs/
 .vscode/
 
 output_log
+/data/uploads
+/data
+rag.db
+rag.db
+*.md
+*.md
+rag.db

@@ -1,158 +1,63 @@
-# from datasets import Dataset
-# from ragas import evaluate
-# from ragas.metrics import(
-#     faithfulness,
-#     answer_relevancy
-# )
+import logging
+from typing import Dict, Any
+from src.evaluation.llm_judge import LLMJudge
 
-# class RagasEvaluator:
-
-#     def evaluate(self, query, answer, context):
-
-#         faithfulness = self._faithfulness(answer, context)
-
-#         relevancy = self._relevancy(query, answer)
-
-#         hallucinated = (1 if faithfulness < 50 else 0)
-
-#         return {
-#             "faithfulness": faithfulness,
-#             "answer_relevancy": relevancy,
-#             "hallucinated": hallucinated
-#         }
-    
-#     def _faithfulness(self, answer, context):
-
-#         answer_words = set(answer.lower().split())
-
-#         context_words = set(context.lower().split())
-
-#         overlap = len(answer_words & context_words)
-
-#         total = len(answer_words)
-
-#         if total == 0:
-#             return 0
-        
-#         return round(
-#             overlap/total *100 , 2
-#         )
-    
-#     def _relevancy(self, query, answer):
-
-#         query_words = set(query.lower().split())
-
-#         answer_words = set(answer.lower().split())
-
-#         overlap = len(query_words & answer_words)
-
-#         total = len(query_words)
-
-#         if total == 0:
-#             return 0
-        
-#         return round(
-#             overlap / total * 100, 2
-#         )
-
+logger = logging.getLogger(__name__)
 
 
 class RagasEvaluator:
+    """
+    RAG Evaluation Engine providing automated Faithfulness, Relevancy,
+    Hallucination Detection, and LLM-as-Judge metrics with robust fallback heuristics.
+    """
 
-    def evaluate(
-        self,
-        query,
-        answer,
-        context
-    ):
+    def __init__(self) -> None:
+        self.judge_engine = LLMJudge()
 
-        faithfulness_score = self._faithfulness(
-            answer,
-            context
-        )
+    def evaluate(self, query: str, answer: str, context: str) -> Dict[str, Any]:
+        """
+        Evaluates answer quality against context and query.
 
-        relevancy_score = self._relevancy(
-            query,
-            answer
-        )
+        Args:
+            query (str): User question.
+            answer (str): Generated response.
+            context (str): Retrieved context.
 
-        judge_score = round(
-         (
-             faithfulness_score +
-             relevancy_score
-         ) / 2,
-         2
-        )
+        Returns:
+            Dict[str, Any]: Evaluation dictionary containing scores, hallucination flag, and rationale.
+        """
+        # Attempt evaluation via LLM Judge
+        judge_res = self.judge_engine.judge(question=query, answer=answer, context=context)
+        if judge_res:
+            return judge_res
 
-        hallucinated = (
-            1
-            if faithfulness_score < 50
-            else 0
-        )
+        # Fallback to word-overlap heuristic if LLM Judge is offline/unavailable
+        faithfulness_score = self._faithfulness(answer, context)
+        relevancy_score = self._relevancy(query, answer)
+        judge_score = round((faithfulness_score + relevancy_score) / 2.0, 2)
+        hallucinated = 1 if faithfulness_score < 50.0 else 0
 
         return {
             "faithfulness": faithfulness_score,
             "answer_relevancy": relevancy_score,
             "judge_score": judge_score,
-            "hallucinated": hallucinated
+            "hallucinated": hallucinated,
+            "reasoning": "Evaluated using heuristic word-overlap model (LLM Judge offline)."
         }
 
-    def _faithfulness(
-        self,
-        answer,
-        context
-    ):
+    def _faithfulness(self, answer: str, context: str) -> float:
+        answer_words = set(answer.lower().split())
+        context_words = set(context.lower().split())
+        if not answer_words:
+            return 0.0
+        overlap = len(answer_words & context_words)
+        return round((overlap / len(answer_words)) * 100.0, 2)
 
-        answer_words = set(
-            answer.lower().split()
-        )
-
-        context_words = set(
-            context.lower().split()
-        )
-
-        overlap = len(
-            answer_words & context_words
-        )
-
-        total = len(
-            answer_words
-        )
-
-        if total == 0:
-            return 0
-
-        return round(
-            (overlap / total) * 100,
-            2
-        )
-
-    def _relevancy(
-        self,
-        query,
-        answer
-    ):
-
-        query_words = set(
-            query.lower().split()
-        )
-
-        answer_words = set(
-            answer.lower().split()
-        )
-
-        overlap = len(
-            query_words & answer_words
-        )
-
-        total = len(
-            query_words
-        )
-
-        if total == 0:
-            return 0
-
-        return round(
-            (overlap / total) * 100,
-            2
-        )
+    def _relevancy(self, query: str, answer: str) -> float:
+        query_words = set(query.lower().split())
+        answer_words = set(answer.lower().split())
+        if not query_words:
+            return 0.0
+        overlap = len(query_words & answer_words)
+        return round((overlap / len(query_words)) * 100.0, 2)
+

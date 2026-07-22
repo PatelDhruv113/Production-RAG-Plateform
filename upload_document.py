@@ -23,8 +23,7 @@ for doc in documents:
     print(f"Indexing {doc['filename']}...", flush=True)
 
     document_id = db.save_document(
-        filename=doc["filename"],
-        category="Unknown"
+        filename=doc["filename"]
     )
 
     pages = doc.get(
@@ -45,7 +44,6 @@ for doc in documents:
                 document_id=document_id,
                 chunk_text=chunk,
                 page_number=page["page_number"],
-                category="Unknown",
                 source_file=doc["filename"]
             )
 

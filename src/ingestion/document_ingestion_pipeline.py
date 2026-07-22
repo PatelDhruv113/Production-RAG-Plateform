@@ -22,12 +22,7 @@ class DocumentIngestionPipeline:
 
         self.vector = VectorRetriever()
 
-    def ingest(
-        self,
-        pdf_path,
-        category
-    ):
-
+    def ingest(self, pdf_path):
 
         pdf_path = Path(pdf_path)
 
@@ -41,9 +36,17 @@ class DocumentIngestionPipeline:
 
                 continue
 
+            existing_document_id = (
+                self.db.get_document_by_filename(
+                    filename=document["filename"]
+                )
+            )
+
+            if existing_document_id:
+                return existing_document_id
+
             document_id = self.db.save_document(
-                filename=document["filename"],
-                category=category
+                filename=document["filename"]
             )
 
             all_embeddings = []
@@ -75,7 +78,6 @@ class DocumentIngestionPipeline:
                         document_id=document_id,
                         chunk_text=chunk,
                         page_number=page_number,
-                        category=category,
                         source_file=document["filename"]
                     )
 
@@ -92,7 +94,6 @@ class DocumentIngestionPipeline:
                         index_path
                     )
 
-
                 self.vector.add_embeddings(
                     all_embeddings
                 )
@@ -100,3 +101,5 @@ class DocumentIngestionPipeline:
                 self.vector.save_index(
                     "data/faiss_index/rag.index"
                 )
+
+            return document_id

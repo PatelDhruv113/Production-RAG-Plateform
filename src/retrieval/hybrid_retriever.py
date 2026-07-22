@@ -14,7 +14,7 @@ class HybridRetriever:
 
         sorted_results = sorted(
             scores.items(),
-            key=lambda x: x[1],
+            key=lambda x: x[1], 
             reverse=True
         )
 
@@ -26,4 +26,4 @@ class HybridRetriever:
 
     def retrieve(self, vector_indices, bm25_indices):
 
-        return self.reciprocal_rank_fusion(vector_indices, bm25_indices)
+        return self.reciprocal_rank_fusion(vector_indices, bm25_indices)   
