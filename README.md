@@ -54,7 +54,7 @@ flowchart TD
 The project adheres to a clean, modular structure separating concern across data models, databases, ingestion logic, retrieval algorithms, generation flows, observability, and evaluation metrics:
 
 ```directory
-production-rag-platform/
+Production-RAG-Plateform/
 │
 ├── data/                       # Local data stores (Git ignored)
 │   ├── documents/              # Source PDFs to ingest

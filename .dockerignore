@@ -25,3 +25,8 @@ data/documents/*
 data/faiss_index/*
 data/uploads/*
 logs/*
+
+# Local Agent / Development files
+.agents/
+output_log.txt
+.python-version
