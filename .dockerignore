@@ -1,0 +1,27 @@
+# Environments
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Git
+.git
+.github
+
+# Pycache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local Credentials
+.env
+
+# Data and SQLite
+*.db
+data/documents/*
+data/faiss_index/*
+data/uploads/*
+logs/*
