@@ -1,21 +1,52 @@
+# =========================
+# Python
+# =========================
 .venv/
+venv/
+env/
 __pycache__/
+*.py[cod]
+*$py.class
+
+# =========================
+# Environment Variables
+# =========================
 .env
 
-*.pyc
-*.pyo
+# =========================
+# IDE
+# =========================
+.vscode/
+.idea/
 
-data/faiss_index/
-
-logs/
-
+# =========================
+# Streamlit
+# =========================
 .streamlit/
 
-.vscode/
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+output_log.txt
 
-output_log
-/data/uploads
-/data
+# =========================
+# Database
+# =========================
 rag.db
-rag.db
-rag.db
+
+# =========================
+# Ignore ONLY generated FAISS index
+# (documents should be committed)
+# =========================
+data/faiss_index/
+
+# Ignore runtime uploads
+data/uploads/
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db

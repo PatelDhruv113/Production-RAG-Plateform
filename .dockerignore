@@ -21,9 +21,9 @@ __pycache__/
 
 # Data and SQLite
 *.db
-data/documents/*
-data/faiss_index/*
-data/uploads/*
+# Data and SQLite
+*.db
+logs/*
 logs/*
 
 # Local Agent / Development files
