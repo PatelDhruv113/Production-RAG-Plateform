@@ -20,6 +20,9 @@ COPY . .
 
 RUN mkdir -p data/documents data/faiss_index data/uploads logs
 
-EXPOSE 8501
+# Railway automatically provides PORT
+ENV PORT=8080
 
-CMD ["streamlit", "run", "src/dashboard/streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+EXPOSE 8080
+
+CMD ["sh", "-c", "streamlit run src/dashboard/streamlit_app.py --server.address=0.0.0.0 --server.port=${PORT} --server.headless=true"]
