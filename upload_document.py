@@ -23,8 +23,7 @@ for doc in documents:
     print(f"Indexing {doc['filename']}...", flush=True)
 
     document_id = db.save_document(
-        filename=doc["filename"],
-        category="Unknown"
+        filename=doc["filename"]
     )
 
     pages = doc.get(
@@ -45,7 +44,6 @@ for doc in documents:
                 document_id=document_id,
                 chunk_text=chunk,
                 page_number=page["page_number"],
-                category="Unknown",
                 source_file=doc["filename"]
             )
 
@@ -66,3 +64,22 @@ retriever.create_index(embeddings)
 retriever.save_index("data/faiss_index/rag.index")
 
 print("Done", flush=True)
+
+
+
+
+
+
+# import sqlite3
+
+# conn = sqlite3.connect("rag.db")
+
+# cursor = conn.cursor()
+
+# cursor.execute("""
+# SELECT name
+# FROM sqlite_master
+# WHERE type='table'
+# """)
+
+# print(cursor.fetchall())
