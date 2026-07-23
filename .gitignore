@@ -18,6 +18,4 @@ output_log
 /data
 rag.db
 rag.db
-*.md
-*.md
 rag.db
