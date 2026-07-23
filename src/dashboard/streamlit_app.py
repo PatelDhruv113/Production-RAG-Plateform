@@ -181,6 +181,32 @@ with st.sidebar:
     st.caption("Active Pipeline Settings & Health")
     
     st.markdown("---")
+    st.subheader("🔑 API Configuration")
+    
+    groq_input = st.text_input(
+        "Groq API Key",
+        value=os.environ.get("GROQ_API_KEY", ""),
+        type="password",
+        help="Paste your Groq API Key (gsk_...) here. Overrides any stored keys."
+    )
+    google_input = st.text_input(
+        "Google API Key",
+        value=os.environ.get("GOOGLE_API_KEY", ""),
+        type="password",
+        help="Paste your Google API Key here for Google services."
+    )
+    
+    if groq_input.strip():
+        os.environ["GROQ_API_KEY"] = groq_input.strip()
+    elif "GROQ_API_KEY" in os.environ and not groq_input.strip():
+        del os.environ["GROQ_API_KEY"]
+        
+    if google_input.strip():
+        os.environ["GOOGLE_API_KEY"] = google_input.strip()
+    elif "GOOGLE_API_KEY" in os.environ and not google_input.strip():
+        del os.environ["GOOGLE_API_KEY"]
+
+    st.markdown("---")
     st.subheader("📊 Session Activity")
     
     st.metric("Queries Processed", len(st.session_state.history))
@@ -242,9 +268,13 @@ with tab1:
     else:
         search_mode = "hybrid"
 
-    if st.button("🚀 Run RAG Inference", use_container_width=True):
+    if st.button("🚀 Run RAG Inference", width="stretch"):
         if not query_input.strip():
             st.warning("Please enter a non-empty question.")
+            st.stop()
+
+        if not os.environ.get("GROQ_API_KEY"):
+            st.error("🔑 Groq API Key is missing! Please enter your Groq API Key in the sidebar configuration to execute inference.")
             st.stop()
 
         try:
@@ -422,7 +452,7 @@ with tab3:
 
         st.markdown("---")
         st.subheader("Detailed Evaluation Ledger")
-        st.dataframe(eval_df, use_container_width=True)
+        st.dataframe(eval_df, width="stretch")
     else:
         st.info("No query evaluation logs available in current session.")
 
@@ -438,7 +468,7 @@ with tab4:
         b_k = st.slider("Benchmark Top K", min_value=1, max_value=10, value=5, key="b_top_k_slider")
     with bc2:
         st.write("")
-        run_bench = st.button("⚡ Execute Benchmarking Test", use_container_width=True)
+        run_bench = st.button("⚡ Execute Benchmarking Test", width="stretch")
 
     if run_bench:
         with st.spinner("🔄 Benchmarking retrieval strategies across dataset..."):
@@ -448,7 +478,7 @@ with tab4:
 
                 st.success("✅ Benchmarking Complete!")
                 st.subheader("📊 Comparative Benchmark Results")
-                st.dataframe(bench_df, use_container_width=True)
+                st.dataframe(bench_df, width="stretch")
 
                 st.subheader("📈 Performance Visualization")
                 vc1, vc2 = st.columns(2)

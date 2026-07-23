@@ -1,12 +1,20 @@
+import os
 from langchain_groq import ChatGroq
 
 class MultiQueryGenerator:
 
     def __init__(self):
+        pass
 
-        self.llm = ChatGroq(
+    @property
+    def llm(self) -> ChatGroq:
+        api_key = os.environ.get("GROQ_API_KEY")
+        if not api_key:
+            raise ValueError("Groq API Key is missing. Please set it in the Streamlit sidebar.")
+        return ChatGroq(
             model_name="llama-3.3-70b-versatile",
-            temperature=0
+            temperature=0,
+            groq_api_key=api_key
         )
 
     def generate(self, query):

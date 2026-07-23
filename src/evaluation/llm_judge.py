@@ -1,3 +1,4 @@
+import os
 import json
 import logging
 from typing import Optional, Dict, Any
@@ -13,14 +14,18 @@ class LLMJudge:
     """
 
     def __init__(self, model_name: str = "llama-3.3-70b-versatile") -> None:
-        try:
-            self.llm = ChatGroq(
-                model_name=model_name,
-                temperature=0
-            )
-        except Exception as e:
-            logger.warning(f"Failed to initialize ChatGroq for LLMJudge: {e}")
-            self.llm = None
+        self.model_name = model_name
+
+    @property
+    def llm(self) -> Optional[ChatGroq]:
+        api_key = os.environ.get("GROQ_API_KEY")
+        if not api_key:
+            return None
+        return ChatGroq(
+            model_name=self.model_name,
+            temperature=0,
+            groq_api_key=api_key
+        )
 
     def judge(self, question: str, answer: str, context: str) -> Optional[Dict[str, Any]]:
         """
